@@ -3,8 +3,6 @@ import mysql from "mysql2/promise";
 import dotenv from "dotenv";
 // Create the users table if it doesn't exist
 dotenv.config();
-// const app = express();
-// app.use(express.json());
 const pool = mysql.createPool({
     host: process.env.MYSQL_HOST,
     user: process.env.MYSQL_USER,
@@ -34,7 +32,6 @@ export const initializeUserTable = async () => {
 
 export const createUser = async (user) => {
     const sql = "INSERT INTO users (fullname, email, phoneNumber, password, role) VALUES (?, ?, ?, ?, ?)";
-    // const values = ["bhumik", "virmanibhumik@gmail.com", 58038349, "test123", "student"];
     const values = [user.fullname, user.email, user.phoneNumber, user.password, user.role];
     const connection = await pool.getConnection();
     try {
