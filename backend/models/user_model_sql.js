@@ -14,7 +14,7 @@ const pool = mysql.createPool({
 });
 export const initializeUserTable = async () => {
     const sql = `
-        CREATE TABLE IF NOT EXISTS users2 (
+        CREATE TABLE IF NOT EXISTS users(
             id INT AUTO_INCREMENT PRIMARY KEY,
             fullname VARCHAR(255) NOT NULL,
             email VARCHAR(255) UNIQUE NOT NULL,
@@ -45,14 +45,14 @@ export const createUser = async (user) => {
     }
 };
 
-// // Get a user by email
-// export const getUserByEmail = async (email) => {
-//     const sql = "SELECT * FROM users WHERE email = ?";
-//     const connection = await pool.getConnection();
-//     const [rows] = await connection.execute(sql, [email]);
-//     connection.release();
-//     return rows[0]; // Return the first user found
-// };
+// Get a user by email
+export const getUserByEmail = async (email) => {
+    const sql = "SELECT * FROM users WHERE email = ?";
+    const connection = await pool.getConnection();
+    const [rows] = await connection.execute(sql, [email]);
+    connection.release();
+    return rows[0]; // Return the first user found
+};
 
 // export async function createNote(title, contents){
 //   const [result] = await connection.query(`

@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import getDataUri from "../utils/datauri.js";
 import cloudinary from "../utils/cloudinary.js";
-import { createUser, initializeUserTable } from "../models/user_model_sql.js";
+import { createUser, getUserByEmail, initializeUserTable} from "../models/user_model_sql.js";
 
 export const register = async (req, res) => {
     try {
@@ -56,14 +56,103 @@ export const registerSql = async (req, res) => {
         console.log("call create user");
         
         const { fullname, email, phoneNumber, password, role } = req.body;
-        const userId = await createUser({ fullname, email, phoneNumber, password, role });
+
+        if (!fullname || !email || !phoneNumber || !password || !role) {
+            return res.status(400).json({
+                message: "All fields are required",
+                success: false
+            });
+        }
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const userId = await createUser({ fullname, email, phoneNumber, password: hashedPassword, role });
         // fullname, email, phoneNumber, password, role
-        res.status(201).json({ message: "User created successfully", userId });
+        const tokenData = {
+            userId: userId
+        };
+        const token = jwt.sign(tokenData, process.env.SECRET_KEY, { expiresIn: '1d' });
+
+        return res.status(201).cookie("token", token, { maxAge: 1 * 24 * 60 * 60 * 1000, httpOnly: true, sameSite: 'strict' }).json({
+            message: `Welcome ${fullname}`,
+            user: { id: userId, fullname, email, phoneNumber, role },
+            success: true
+        });
+        // res.status(201).json({ message: "User created successfully", userId });
     } catch (error) {
-        console.log(error);
+        console.error('Error registering user:', error.stack);
+        return res.status(500).json({
+            message: "Internal server error",
+            success: false
+        });
     }
 }
 
+export const loginUsersql = async (req, res) => {
+    try {
+        const { email, password, role } = req.body;
+
+        if (!email || !password || !role) {
+            return res.status(400).json({
+                message: "Something is missing",
+                success: false
+            });
+        }
+
+        const user = await getUserByEmail(email);
+        if (!user) {
+            return res.status(400).json({
+                message: "Incorrect email or password.",
+                success: false
+            });
+        }
+
+        const isPasswordMatch = await bcrypt.compare(password, user.password);
+        if (!isPasswordMatch) {
+            return res.status(400).json({
+                message: "Incorrect email or password.",
+                success: false
+            });
+        }
+
+        if (role !== user.role) {
+            return res.status(400).json({
+                message: "Account doesn't exist with current role.",
+                success: false
+            });
+        }
+
+        const tokenData = {
+            userId: user.id
+        };
+        const token = jwt.sign(tokenData, process.env.SECRET_KEY, { expiresIn: '1d' });
+
+        const userInfo = {
+            id: user.id,
+            fullname: user.fullname,
+            email: user.email,
+            phoneNumber: user.phoneNumber,
+            role: user.role
+        };
+
+        return res.status(200).cookie("token", token, { maxAge: 1 * 24 * 60 * 60 * 1000, httpOnly: true, sameSite: 'strict' }).json({
+            message: `Welcome back ${user.fullname}`,
+            user: userInfo,
+            success: true
+        });
+    } catch (error) {
+        console.error('Error logging in user:', error.stack);
+        return res.status(500).json({
+            message: "Internal server error",
+            success: false
+        });
+    }
+};
+
+export const logoutUser = (req, res) => {
+    return res.status(200).cookie("token", "", { maxAge: 1, httpOnly: true, sameSite: 'strict' }).json({
+        message: "Logged out successfully",
+        success: true
+    });
+};
 export const login = async (req, res) => {
     try {
         const { email, password, role } = req.body;

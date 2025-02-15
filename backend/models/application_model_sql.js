@@ -23,7 +23,9 @@ export const initializeUserTableForApplication = async () => {
             user_id INT NOT NULL,
             resume VARCHAR(255) NOT NULL,
             status ENUM('pending', 'reviewed', 'accepted', 'rejected') DEFAULT 'pending',
-            applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE CASCADE,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         )
     `;
     const connection = await pool.getConnection();
@@ -43,11 +45,35 @@ export const createApplication = async (application) => {
     return result.insertId;
 };
 
+
+export const applywithid = async (id) => {
+    const sql = "INSERT INTO applications (job_id, user_id, resume, status) VALUES (?, ?, ?, ?)";
+    const values = [id.job_id, id.user_id, id.resume, 'applied'];
+
+    const connection = await pool.getConnection();
+    try {
+        const [result] = await connection.execute(sql, values);
+        console.log('Application submitted successfully:', result.insertId);
+        return result.insertId;
+    } catch (error) {
+        console.error('Error applying for job:', error.stack);
+        throw error;
+    } finally {
+        connection.release();
+    }
+}
 // // Get applications for a job
 export const getApplicationsByJob = async (job_id) => {
     const sql = "SELECT * FROM applications WHERE job_id = ?";
     const connection = await pool.getConnection();
-    const [rows] = await connection.execute(sql, [job_id]);
-    connection.release();
-    return rows;
-};
+
+    try {
+        const [rows] = await connection.execute(sql, [job_id]);
+        return rows;
+    } catch (error) {
+        console.error('Error retrieving applications for job:', error.stack);
+        throw error;
+    } finally {
+        connection.release();
+    }
+}

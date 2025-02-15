@@ -1,6 +1,145 @@
-import { Company } from "../models/company.model.js";
+import { checkCompanyExists, createCompany, initializeCompanyTable , getAllCompanies, getCompanyById, updateCompanyById} from "../models/company.model.js";
 import getDataUri from "../utils/datauri.js";
 import cloudinary from "../utils/cloudinary.js";
+// import bcrypt from 'bcrypt';
+import bcrypt from "bcryptjs";
+import jwt from 'jsonwebtoken';
+
+export const registerCompanySql = async (req, res) => {
+    try {
+        console.log("connection call:", req.body);
+        await initializeCompanyTable();
+        console.log("call create company");
+
+        const { name, description, website, location, logo } = req.body;
+
+        if (!name || !description || !website || !location || !logo) {
+            return res.status(400).json({
+                message: "All fields are required",
+                success: false
+            });
+        }
+
+        const companyExists = await checkCompanyExists(name);
+        if (companyExists) {
+            return res.status(400).json({
+                message: "You can't register the same company.",
+                success: false
+            });
+        }
+
+        const companyId = await createCompany({ name, description, website, location, logo });
+
+        const tokenData = {
+            companyId: companyId
+        };
+        const token = jwt.sign(tokenData, process.env.SECRET_KEY, { expiresIn: '1d' });
+
+        return res.status(201).cookie("token", token, { maxAge: 1 * 24 * 60 * 60 * 1000, httpOnly: true, sameSite: 'strict' }).json({
+            message: `Company ${name} registered successfully`,
+            company: { id: companyId, name, description, website, location, logo },
+            success: true
+        });
+    } catch (error) {
+        console.error('Error registering company:', error.stack);
+        return res.status(500).json({
+            message: "Internal server error",
+            success: false
+        });
+    }
+};
+
+export const getCompanySql = async (req, res) => {
+    try {
+        const companies = await getAllCompanies();
+        if (companies.length === 0) {
+            return res.status(404).json({
+                message: "Companies not found.",
+                success: false
+            });
+        }
+        return res.status(200).json({
+            companies,
+            success: true
+        });
+    } catch (error) {
+        console.error('Error retrieving companies:', error.stack);
+        return res.status(500).json({
+            message: "Internal server error",
+            success: false
+        });
+    }
+};
+
+export const getCompanyByIdSql = async (req, res) => {
+    try {
+        const companyId = req.params.id;
+        const company = await getCompanyById(companyId);
+        if (!company) {
+            return res.status(404).json({
+                message: "Company not found.",
+                success: false
+            });
+        }
+        return res.status(200).json({
+            company,
+            success: true
+        });
+    } catch (error) {
+        console.error('Error retrieving company:', error.stack);
+        return res.status(500).json({
+            message: "Internal server error",
+            success: false
+        });
+    }
+};
+
+export const updateCompanySql = async (req, res) => {
+    try {
+        const updateData = req.body;
+
+        const file = req.file;
+        if (file) {
+            // Upload logo to Cloudinary
+            const fileUri = getDataUri(file);
+            const cloudResponse = await cloudinary.uploader.upload(fileUri.content);
+            updateData.logo = cloudResponse.secure_url;
+        }
+
+        const companyExists = await getCompanyById(req.params.id);
+        if (!companyExists) {
+            return res.status(404).json({
+                message: "Company not found.",
+                success: false
+            });
+        }
+
+        const updated = await updateCompanyById(req.params.id, updateData);
+        if (!updated) {
+            return res.status(500).json({
+                message: "Failed to update company information.",
+                success: false
+            });
+        }
+
+        return res.status(200).json({
+            message: "Company information updated successfully.",
+            success: true
+        });
+    } catch (error) {
+        console.error('Error updating company:', error.stack);
+        return res.status(500).json({
+            message: "Internal server error",
+            success: false
+        });
+    }
+};
+
+
+
+
+
+
 
 export const registerCompany = async (req, res) => {
     try {
@@ -50,26 +189,7 @@ export const getCompany = async (req, res) => {
         console.log(error);
     }
 }
-// get company by id
-export const getCompanyById = async (req, res) => {
-    try {
-        const companyId = req.params.id;
-        const company = await Company.findById(companyId);
-        if (!company) {
-            return res.status(404).json({
-                message: "Company not found.",
-                success: false
-            })
-        }
-        return res.status(200).json({
-            company,
-            success: true
-        })
-    } catch (error) {
-        console.log(error);
-    }
-}
-export const updateCompany = async (req, res) => {
+ export const updateCompany = async (req, res) => {
     try {
         const { name, description, website, location } = req.body;
  

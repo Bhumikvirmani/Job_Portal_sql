@@ -1,4 +1,4 @@
-import { Application } from "../models/application.model.js";
+// import { Application } from "../models/application.model.js";
 import { initializeUserTableForApplication, createApplication } from "../models/application_model_sql.js";
 import { Job } from "../models/job.model.js";
 
