@@ -1,6 +1,6 @@
 import { checkCompanyExists, createCompany, initializeCompanyTable , getAllCompanies, getCompanyById, updateCompanyById} from "../models/company.model.js";
-import getDataUri from "../utils/datauri.js";
-import cloudinary from "../utils/cloudinary.js";
+// import getDataUri from "../utils/datauri.js";
+// import cloudinary from "../utils/cloudinary.js";
 // import bcrypt from 'bcrypt';
 import bcrypt from "bcryptjs";
 import jwt from 'jsonwebtoken';

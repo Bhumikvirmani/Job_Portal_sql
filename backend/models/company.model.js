@@ -1,7 +1,6 @@
 import mysql from "mysql2/promise";
 import dotenv from "dotenv";
-// import { pool } from "../config/database";
-// Create the users table if it doesn't exist
+
 dotenv.config();
 const pool = mysql.createPool({
     host: process.env.MYSQL_HOST,
