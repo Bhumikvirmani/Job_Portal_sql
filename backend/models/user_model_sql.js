@@ -41,7 +41,7 @@ export const initializeProfileTable = async () => {
             resume VARCHAR(255),
             resumeOriginalName VARCHAR(255),
             company_id INT,
-            profilePhoto VARCHAR(255) DEFAULT '',
+            profilePhoto  LONGTEXT,
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
             FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE SET NULL
         )

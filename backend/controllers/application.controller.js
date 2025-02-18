@@ -34,14 +34,19 @@ export const applyJobSql = async (req, res) => {
         }
 
         // Create a new application
-        const applicationData = {
+        // const applicationData = {
+        //     job_id: jobId,
+        //     user_id: userId,
+        //     resume: "resume_url", // Placeholder, adapt as needed
+        //     status: "pending"
+        // };
+        // await createApplication(applicationData);
+        const newApplication = await createApplication({
             job_id: jobId,
             user_id: userId,
             resume: "resume_url", // Placeholder, adapt as needed
             status: "pending"
-        };
-        await createApplication(applicationData);
-
+        });
         return res.status(201).json({
             message: "Job applied successfully.",
             success: true

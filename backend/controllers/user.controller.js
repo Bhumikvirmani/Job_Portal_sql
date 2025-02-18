@@ -2,19 +2,31 @@
 import express from 'express';
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import multer from "multer";
+import { fileURLToPath } from 'url';
+// import sharp from 'sharp';
+import path from "path";
+import fs from 'fs';
+const upload = multer();
 import { createUser, deleteUserById, getUserByEmail, getUserById,  initializeProfileTable,  initializeUserTable,  updateUserProfile} from "../models/user_model_sql.js";
 
-
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const uploadDir = path.join(__dirname, '..', 'media', 'uploads');
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
 export const registerSql = async (req, res) => {
     try {
         console.log("Received request body:", JSON.stringify(req.body, null, 2));
-        initializeUserTable(); 
-        initializeProfileTable();// Log the received request body in JSON format
+        initializeUserTable();
+        initializeProfileTable(); // Log the received request body in JSON format
         console.log("Initializing tables complete.");
 
-        const { fullname, email, phoneNumber, password, role, profile } = req.body;
+        const { fullname, email, phoneNumber, password, role } = req.body;
+        const file = req.file; // Get the uploaded file
 
-        console.log("Parsed values:", { fullname, email, phoneNumber, password, role, profile });  // Log the parsed values
+        console.log("Parsed values:", { fullname, email, phoneNumber, password, role, file });  // Log the parsed values
 
         if (!fullname) {
             return res.status(400).json({
@@ -47,8 +59,31 @@ export const registerSql = async (req, res) => {
             });
         }
 
+        const existingUser = await getUserByEmail(email);
+        if (existingUser) {
+            return res.status(400).json({
+                message: 'User already exists with this email.',
+                success: false,
+            });
+        }
+
         const hashedPassword = await bcrypt.hash(password, 10);
-        const userId = await createUser({ fullname, email, phoneNumber, password: hashedPassword, role, profile });
+        let profilePhotoPath = '';
+        if (file) {
+            profilePhotoPath = path.join('media', 'uploads', file.filename); // Save file path relative to project root
+        }
+        const user = {
+            fullname,
+            email,
+            phoneNumber,
+            password: hashedPassword,
+            role,
+            profile: {
+                 profilePhoto: profilePhotoPath
+            }
+        };
+        console.log("User to be created:", user);
+        const userId = await createUser(user);
 
         const tokenData = {
             userId: userId
@@ -68,6 +103,76 @@ export const registerSql = async (req, res) => {
         });
     }
 };
+
+// export const registerSql = async (req, res) => {
+//     try {
+//         console.log("Received request body:", JSON.stringify(req.body, null, 2));
+//         initializeUserTable(); 
+//         initializeProfileTable();// Log the received request body in JSON format
+//         console.log("Initializing tables complete.");
+
+//         const { fullname, email, phoneNumber, password, role, profile } = req.body;
+
+//         console.log("Parsed values:", { fullname, email, phoneNumber, password, role, profile });  // Log the parsed values
+
+//         if (!fullname) {
+//             return res.status(400).json({
+//                 message: "Fullname is required",
+//                 success: false
+//             });
+//         }
+//         if (!email) {
+//             return res.status(400).json({
+//                 message: "Email is required",
+//                 success: false
+//             });
+//         }
+//         if (!phoneNumber) {
+//             return res.status(400).json({
+//                 message: "Phone number is required",
+//                 success: false
+//             });
+//         }
+//         if (!password) {
+//             return res.status(400).json({
+//                 message: "Password is required",
+//                 success: false
+//             });
+//         }
+//         if (!role) {
+//             return res.status(400).json({
+//                 message: "Role is required",
+//                 success: false
+//             });
+//         }
+//         const existingUser = await getUserByEmail(email);
+//         if (existingUser) {
+//             return res.status(400).json({
+//                 message: 'User already exists with this email.',
+//                 success: false,
+//             });
+//         }
+//         const hashedPassword = await bcrypt.hash(password, 10);
+//         const userId = await createUser({ fullname, email, phoneNumber, password: hashedPassword, role, profile });
+
+//         const tokenData = {
+//             userId: userId
+//         };
+//         const token = jwt.sign(tokenData, process.env.SECRET_KEY, { expiresIn: '1d' });
+
+//         return res.status(201).cookie("token", token, { maxAge: 1 * 24 * 60 * 60 * 1000, httpOnly: true, sameSite: 'strict' }).json({
+//             message: `Welcome ${fullname}`,
+//             user: { id: userId, fullname, email, phoneNumber, role },
+//             success: true
+//         });
+//     } catch (error) {
+//         console.error('Error registering user:', error.stack);
+//         return res.status(500).json({
+//             message: "Internal server error",
+//             success: false
+//         });
+//     }
+// };
 
 export const loginUsersql = async (req, res) => {
     try {
@@ -113,7 +218,8 @@ export const loginUsersql = async (req, res) => {
             fullname: user.fullname,
             email: user.email,
             phoneNumber: user.phoneNumber,
-            role: user.role
+            role: user.role,
+            profile: user.profile
         };
 
         return res.status(200).cookie("token", token, { maxAge: 1 * 24 * 60 * 60 * 1000, httpOnly: true, sameSite: 'strict' }).json({
@@ -131,10 +237,18 @@ export const loginUsersql = async (req, res) => {
 };
 
 export const logoutUsersql = (req, res) => {
-    return res.status(200).cookie("token", "", { maxAge: 1, httpOnly: true, sameSite: 'strict' }).json({
-        message: "Logged out successfully",
-        success: true
-    });
+    try {
+        return res.status(200).cookie("token", "", { maxAge: 0 }).json({
+            message: "Logged out successfully.",
+            success: true
+        });
+    } catch (error) {
+        console.error('Error logging out user:', error.stack);
+        return res.status(500).json({
+            message: "Internal server error",
+            success: false
+        });
+    }
 };
 
 export const getUserSqlById = async (req, res) => {

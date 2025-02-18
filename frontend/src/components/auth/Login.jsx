@@ -27,11 +27,18 @@ const Login = () => {
 
     const submitHandler = async (e) => {
         e.preventDefault();
+        const payload = {
+            email: input.email,
+            password: input.password,
+            role: input.role,
+        };
+        console.log(payload); // Log the payload to see what is being sent
+
         try {
             dispatch(setLoading(true));
-            const res = await axios.post(`${USER_API_END_POINT}/login`, input, {
+            const res = await axios.post(`${USER_API_END_POINT}/login`, payload, {
                 headers: {
-                    "Content-Type": "application/json"
+                    'Content-Type': 'application/json'
                 },
                 withCredentials: true,
             });
@@ -41,17 +48,17 @@ const Login = () => {
                 toast.success(res.data.message);
             }
         } catch (error) {
-            console.log(error);
+            console.log(error.response.data);  // Log error response from backend
             toast.error(error.response.data.message);
         } finally {
             dispatch(setLoading(false));
         }
-    }
+    };
     useEffect(()=>{
         if(user){
             navigate("/");
         }
-    },[])
+    },[user, navigate])
     return (
         <div>
             <Navbar />

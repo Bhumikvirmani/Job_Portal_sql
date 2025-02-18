@@ -5,7 +5,7 @@ import { applyJobSql, getApplicantsSql, getApplicationsByJobController, getAppli
 const router = express.Router();
 console.log("in application route 1");
 
-router.route("/apply/:id").get(isAuthenticated, applyJobSql); // Adjusted to use .get() for consistency
+router.route("/apply/:id").post(isAuthenticated, applyJobSql); // Adjusted to use .get() for consistency
 router.route("/get").get(isAuthenticated, getAppliedJobsSql);
 router.route("/job/:jobId/applications").get(isAuthenticated, getApplicationsByJobController);
 router.route("/status/:id/update").post(isAuthenticated, updateStatusSql);

@@ -1,10 +1,8 @@
 import { checkCompanyExists, createCompany, initializeCompanyTable , getAllCompanies, getCompanyById, updateCompanyById} from "../models/company.model.js";
-// import getDataUri from "../utils/datauri.js";
-// import cloudinary from "../utils/cloudinary.js";
-// import bcrypt from 'bcrypt';
 import bcrypt from "bcryptjs";
 import jwt from 'jsonwebtoken';
-
+// import getDataUri from "../utils/datauri.js"; 
+import cloudinary from "../utils/cloudinary.js"; 
 export const registerCompanySql = async (req, res) => {
     try {
         console.log("connection call:", req.body);
@@ -96,15 +94,14 @@ export const getCompanyByIdSql = async (req, res) => {
 
 export const updateCompanySql = async (req, res) => {
     try {
-        const updateData = req.body;
+        const { name, description, website, location } = req.body;
 
         const file = req.file;
-        if (file) {
-            // Upload logo to Cloudinary
-            const fileUri = getDataUri(file);
-            const cloudResponse = await cloudinary.uploader.upload(fileUri.content);
-            updateData.logo = cloudResponse.secure_url;
-        }
+        // const fileUri = getDataUri(file);
+        const cloudResponse = await cloudinary.uploader.upload(file.content);
+        const logo = cloudResponse.secure_url;
+
+        const updateData = { name, description, website, location, logo };
 
         const companyExists = await getCompanyById(req.params.id);
         if (!companyExists) {
