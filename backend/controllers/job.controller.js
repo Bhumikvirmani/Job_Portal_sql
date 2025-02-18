@@ -8,17 +8,17 @@ export const registerJobSql = async (req, res) => {
         await initializeJobTable();
         console.log("call create job");
 
-        const { title, description, requirements, salary, experiencelevel, location, jobtype, position, company_id } = req.body;
+        const { title, description, requirements, salary, experience_level, location, job_type, position, company_id } = req.body;
         console.log("Title:", title);
         console.log("Description:", description);
         console.log("Requirements:", requirements);
         console.log("Salary:", salary);
-        console.log("Experience Level:", experiencelevel);
+        console.log("Experience Level:", experience_level);
         console.log("Location:", location);
-        console.log("Job Type:", jobtype);
+        console.log("Job Type:", job_type);
         console.log("Position:", position);
         console.log("Company ID:", company_id);
-        if (!title || !description || !requirements || !salary || !experiencelevel || !location || !jobtype || !position || !company_id) {
+        if (!title || !description || !requirements || !salary || !experience_level || !location || !job_type || !position || !company_id) {
             console.error("Validation Failed: Missing required fields");
             return res.status(400).json({
                 message: "All fields are required.",
@@ -31,16 +31,16 @@ export const registerJobSql = async (req, res) => {
             description,
             requirements: requirements.split(","),
             salary: Number(salary),
-            experiencelevel: Number(experiencelevel),
+            experience_level: Number(experience_level),
             location,
-            jobtype,
+            job_type,
             position: Number(position),
             company_id
         });
 
         return res.status(201).json({
             message: "New job created successfully.",
-            job: { id: jobId, title, description, requirements, salary, experiencelevel, location, jobtype, position, company_id },
+            job: { id: jobId, title, description, requirements, salary, experience_level, location, job_type, position, company_id },
             success: true
         });
     } catch (error) {

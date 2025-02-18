@@ -20,9 +20,9 @@ export const initializeJobTable = async () => {
             description TEXT NOT NULL,
             requirements TEXT NOT NULL,
             salary DECIMAL(10,2) NOT NULL,
-            experiencelevel INT NOT NULL,
+            experience_level INT NOT NULL,
             location VARCHAR(255) NOT NULL,
-            jobtype VARCHAR(255) NOT NULL,
+            job_type VARCHAR(255) NOT NULL,
             position INT NOT NULL,
             company_id INT NOT NULL,
             posted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -37,8 +37,8 @@ export const initializeJobTable = async () => {
 
 
 export const createJob = async (job) => {
-    const sql = "INSERT INTO jobs (title, description, requirements, salary, experiencelevel, location, jobtype, position, company_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-    const values = [job.title, job.description, job.requirements, job.salary, job.experiencelevel, job.location, job.jobtype, job.position, job.company_id];
+    const sql = "INSERT INTO jobs (title, description, requirements, salary, experience_level, location, job_type, position, company_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    const values = [job.title, job.description, job.requirements, job.salary, job.experience_level, job.location, job.job_type, job.position, job.company_id];
 
     const connection = await pool.getConnection();
     const [result] = await connection.execute(sql, values);
