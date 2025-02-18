@@ -4,7 +4,7 @@ import { getAdminJobsSql, getAllJobsSql, getJobByIdSql, registerJobSql } from ".
 
 const router = express.Router();
 router.route("/post").post(isAuthenticated, registerJobSql); // Adjusted route name
-router.route("/get").get(isAuthenticated, getAllJobsSql);
+router.route("/get").get(getAllJobsSql);
 router.route("/getadminjobs").get(isAuthenticated, getAdminJobsSql);
 router.route("/get/:id").get(isAuthenticated, getJobByIdSql);
 

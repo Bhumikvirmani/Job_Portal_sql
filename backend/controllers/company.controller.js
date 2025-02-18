@@ -1,31 +1,47 @@
-import { checkCompanyExists, createCompany, initializeCompanyTable , getAllCompanies, getCompanyById, updateCompanyById} from "../models/company.model.js";
+import { checkCompanyExists, createCompany, initializeCompanyTable , getAllCompanies, getCompanyById, updateCompanyById, getCompanyIdByName} from "../models/company.model.js";
 import bcrypt from "bcryptjs";
 import jwt from 'jsonwebtoken';
-// import getDataUri from "../utils/datauri.js"; 
-import cloudinary from "../utils/cloudinary.js"; 
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import express from 'express'
+
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Ensure the uploads directory exists
+const uploadDir = path.join(__dirname, '..', 'media', 'uploads');
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
+
 export const registerCompanySql = async (req, res) => {
     try {
-        console.log("connection call:", req.body);
+          console.log("Received Request Body:", req.body);
+        console.log("Received File:", req.file);
         await initializeCompanyTable();
         console.log("call create company");
 
-        const { name, description, website, location, logo } = req.body;
+        const { name, description, website, location } = req.body;
+        const file = req.file;
 
-        if (!name || !description || !website || !location || !logo) {
+        if (!name || !description || !website || !location || !file) {
             return res.status(400).json({
                 message: "All fields are required",
                 success: false
             });
         }
-
         const companyExists = await checkCompanyExists(name);
         if (companyExists) {
+            console.error("Validation Failed: Company already exists");
             return res.status(400).json({
                 message: "You can't register the same company.",
                 success: false
             });
         }
 
+        const logo = path.join('media', 'uploads', file.filename);
         const companyId = await createCompany({ name, description, website, location, logo });
 
         const tokenData = {
@@ -43,9 +59,52 @@ export const registerCompanySql = async (req, res) => {
         return res.status(500).json({
             message: "Internal server error",
             success: false
-        });
+        })
     }
 };
+// export const registerCompanySql = async (req, res) => {
+//     try {
+//         console.log("connection call:", req.body);
+//         await initializeCompanyTable();
+//         console.log("call create company");
+
+//         const { name, description, website, location, logo } = req.body;
+
+//         if (!name || !description || !website || !location || !logo) {
+//             return res.status(400).json({
+//                 message: "All fields are required",
+//                 success: false
+//             });
+//         }
+
+//         const companyExists = await checkCompanyExists(name);
+//         if (companyExists) {
+//             return res.status(400).json({
+//                 message: "You can't register the same company.",
+//                 success: false
+//             });
+//         }
+
+//         const companyId = await createCompany({ name, description, website, location, logo });
+
+//         const tokenData = {
+//             companyId: companyId
+//         };
+//         const token = jwt.sign(tokenData, process.env.SECRET_KEY, { expiresIn: '1d' });
+
+//         return res.status(201).cookie("token", token, { maxAge: 1 * 24 * 60 * 60 * 1000, httpOnly: true, sameSite: 'strict' }).json({
+//             message: `Company ${name} registered successfully`,
+//             company: { id: companyId, name, description, website, location, logo },
+//             success: true
+//         });
+//     } catch (error) {
+//         console.error('Error registering company:', error.stack);
+//         return res.status(500).json({
+//             message: "Internal server error",
+//             success: false
+//         });
+//     }
+// };
 
 export const getCompanySql = async (req, res) => {
     try {
@@ -95,13 +154,7 @@ export const getCompanyByIdSql = async (req, res) => {
 export const updateCompanySql = async (req, res) => {
     try {
         const { name, description, website, location } = req.body;
-
         const file = req.file;
-        // const fileUri = getDataUri(file);
-        const cloudResponse = await cloudinary.uploader.upload(file.content);
-        const logo = cloudResponse.secure_url;
-
-        const updateData = { name, description, website, location, logo };
 
         const companyExists = await getCompanyById(req.params.id);
         if (!companyExists) {
@@ -111,6 +164,12 @@ export const updateCompanySql = async (req, res) => {
             });
         }
 
+        let logo = companyExists.logo;
+        if (file) {
+            logo = path.join('media', 'uploads', file.filename);
+        }
+
+        const updateData = { name, description, website, location, logo };
         const updated = await updateCompanyById(req.params.id, updateData);
         if (!updated) {
             return res.status(500).json({
@@ -131,7 +190,20 @@ export const updateCompanySql = async (req, res) => {
         });
     }
 };
-
+export const fetchCompanyIdByName = async (req, res) => {
+    try {
+        const { name } = req.query;
+        console.log("Received company name:", name);
+        const companyId = await getCompanyIdByName(name);
+        if (companyId) {
+            return res.status(200).json({ companyId });
+        }
+        return res.status(404).json({ message: "Company not found" });
+    } catch (error) {
+        console.error('Error fetching company ID:', error.stack);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+};
 
 
 

@@ -120,3 +120,16 @@ export const updateCompanyById = async (id, updateData) => {
     }
 };
 
+export const getCompanyIdByName = async (name) => {
+    try {
+        const sql = "SELECT id FROM companies WHERE name = ?";
+        const [rows] = await pool.query(sql, [name]);
+        if (rows.length > 0) {
+            return rows[0].id;
+        }
+        return null;
+    } catch (error) {
+        console.error('Error fetching company ID:', error);
+        throw error;
+    }
+};

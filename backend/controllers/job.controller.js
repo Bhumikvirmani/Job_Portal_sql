@@ -1,5 +1,5 @@
 import { Job } from "../models/job.model.js";
-import { createJob, initializeJobTable, getAllJobs, getJobById, getAdminJobs } from "../models/job_model_sql.js";
+import { createJob, initializeJobTable, getAllJobs, getJobById} from "../models/job_model_sql.js";
 
 // admin post krega job
 export const registerJobSql = async (req, res) => {
@@ -9,8 +9,17 @@ export const registerJobSql = async (req, res) => {
         console.log("call create job");
 
         const { title, description, requirements, salary, experiencelevel, location, jobtype, position, company_id } = req.body;
-
+        console.log("Title:", title);
+        console.log("Description:", description);
+        console.log("Requirements:", requirements);
+        console.log("Salary:", salary);
+        console.log("Experience Level:", experiencelevel);
+        console.log("Location:", location);
+        console.log("Job Type:", jobtype);
+        console.log("Position:", position);
+        console.log("Company ID:", company_id);
         if (!title || !description || !requirements || !salary || !experiencelevel || !location || !jobtype || !position || !company_id) {
+            console.error("Validation Failed: Missing required fields");
             return res.status(400).json({
                 message: "All fields are required.",
                 success: false
@@ -22,7 +31,7 @@ export const registerJobSql = async (req, res) => {
             description,
             requirements: requirements.split(","),
             salary: Number(salary),
-            experiencelevel: Number(experience_level),
+            experiencelevel: Number(experiencelevel),
             location,
             jobtype,
             position: Number(position),
@@ -85,15 +94,34 @@ export const getJobByIdSql = async (req, res) => {
 
 export const getAdminJobsSql = async (req, res) => {
     try {
-        const adminId = req.userId;
-        console.log(`Fetching jobs created by admin with ID: ${adminId}`);
-        const jobs = await getAdminJobs(adminId);
-        if (!jobs || jobs.length === 0) {
-            return res.status(404).json({ message: "Jobs not found.", success: false });
-        }
-        return res.status(200).json({ jobs, success: true });
+        console.log("Fetching all jobs");
+
+        const jobs = await getAllJobs(); // Fetch all jobs instead
+        return res.status(200).json({
+            message: "Jobs fetched successfully",
+            jobs,
+            success: true
+        });
     } catch (error) {
-        console.error('Error fetching admin jobs:', error.stack);
-        return res.status(500).json({ message: "Internal server error.", success: false });
+        console.error('Error fetching jobs:', error.stack);
+        return res.status(500).json({
+            message: "Internal server error",
+            success: false
+        });
     }
 };
+
+// export const getAdminJobsSql = async (req, res) => {
+//     try {
+//         const adminId = req.userId;
+//         console.log(`Fetching jobs created by admin with ID: ${adminId}`);
+//         const jobs = await getAdminJobs(adminId);
+//         if (!jobs || jobs.length === 0) {
+//             return res.status(404).json({ message: "Jobs not found.", success: false });
+//         }
+//         return res.status(200).json({ jobs, success: true });
+//     } catch (error) {
+//         console.error('Error fetching admin jobs:', error.stack);
+//         return res.status(500).json({ message: "Internal server error.", success: false });
+//     }
+// };
