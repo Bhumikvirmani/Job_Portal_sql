@@ -25,7 +25,7 @@ app.use(cookieParser());
 //     credentials: true
 // };
 const corsOptions = {
-    origin:  ['http://localhost:5173', '*'],
+    origin:  ['http://localhost:5173', '*','job-portal-sql-dtf6-1d8s40wsf-bhumiks-projects.vercel.app'],
     credentials: true
 };
 
