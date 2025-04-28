@@ -33,10 +33,16 @@ export const initializeUserTableForApplication = async () => {
     connection.release();
 };
 
-// Insert a new application
+
 export const createApplication = async (application) => {
+    const { job_id, user_id, resume, status } = application;
+
+    if (!job_id || !user_id || !resume || !status) {
+        throw new Error("Missing required parameters");
+    }
+
     const sql = "INSERT INTO applications (job_id, user_id, resume, status) VALUES (?, ?, ?, ?)";
-    const values = [application.job_id, application.user_id, application.resume, application.status];
+    const values = [job_id, user_id, resume, status];
 
     const connection = await pool.getConnection();
     const [result] = await connection.execute(sql, values);
@@ -44,6 +50,7 @@ export const createApplication = async (application) => {
     console.log("application insert");
     return result.insertId;
 };
+
 
 
 export const applywithid = async (id) => {

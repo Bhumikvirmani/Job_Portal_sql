@@ -4,12 +4,15 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import multer from "multer";
 import { fileURLToPath } from 'url';
+import nodemailer from 'nodemailer';
+import crypto from 'crypto';
 // import sharp from 'sharp';
 import path from "path";
 import fs from 'fs';
 const upload = multer();
-import { createUser, deleteUserById, getUserByEmail, getUserById,  initializeProfileTable,  initializeUserTable,  updateUserProfile} from "../models/user_model_sql.js";
-
+import { createOtp, createUser, deleteUserById, getOtp, getUserByEmail, getUserById,  initializeProfileTable,  initializeUserTable,  updateUserProfile} from "../models/user_model_sql.js";
+import dotenv from 'dotenv';
+dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const uploadDir = path.join(__dirname, '..', 'media', 'uploads');
@@ -104,76 +107,90 @@ export const registerSql = async (req, res) => {
     }
 };
 
-// export const registerSql = async (req, res) => {
-//     try {
-//         console.log("Received request body:", JSON.stringify(req.body, null, 2));
-//         initializeUserTable(); 
-//         initializeProfileTable();// Log the received request body in JSON format
-//         console.log("Initializing tables complete.");
 
-//         const { fullname, email, phoneNumber, password, role, profile } = req.body;
+const generateOtp = () => {
+    return crypto.randomBytes(3).toString('hex'); // Generates a 6-character OTP
+};
 
-//         console.log("Parsed values:", { fullname, email, phoneNumber, password, role, profile });  // Log the parsed values
+const sendOtp = async (email, otp) => {
+    let transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+            user: "Virmanibhumik17@gmail.com",
+            pass: "Virmanibhumik@2001"
+        }
+    });
 
-//         if (!fullname) {
-//             return res.status(400).json({
-//                 message: "Fullname is required",
-//                 success: false
-//             });
-//         }
-//         if (!email) {
-//             return res.status(400).json({
-//                 message: "Email is required",
-//                 success: false
-//             });
-//         }
-//         if (!phoneNumber) {
-//             return res.status(400).json({
-//                 message: "Phone number is required",
-//                 success: false
-//             });
-//         }
-//         if (!password) {
-//             return res.status(400).json({
-//                 message: "Password is required",
-//                 success: false
-//             });
-//         }
-//         if (!role) {
-//             return res.status(400).json({
-//                 message: "Role is required",
-//                 success: false
-//             });
-//         }
-//         const existingUser = await getUserByEmail(email);
-//         if (existingUser) {
-//             return res.status(400).json({
-//                 message: 'User already exists with this email.',
-//                 success: false,
-//             });
-//         }
-//         const hashedPassword = await bcrypt.hash(password, 10);
-//         const userId = await createUser({ fullname, email, phoneNumber, password: hashedPassword, role, profile });
+    let mailOptions = {
+        from: process.env.EMAIL_USER,
+        to: email,
+        subject: 'Your OTP Code',
+        text: `Your OTP code is ${otp}`
+    };
 
-//         const tokenData = {
-//             userId: userId
-//         };
-//         const token = jwt.sign(tokenData, process.env.SECRET_KEY, { expiresIn: '1d' });
+    await transporter.sendMail(mailOptions);
+};
 
-//         return res.status(201).cookie("token", token, { maxAge: 1 * 24 * 60 * 60 * 1000, httpOnly: true, sameSite: 'strict' }).json({
-//             message: `Welcome ${fullname}`,
-//             user: { id: userId, fullname, email, phoneNumber, role },
-//             success: true
-//         });
-//     } catch (error) {
-//         console.error('Error registering user:', error.stack);
-//         return res.status(500).json({
-//             message: "Internal server error",
-//             success: false
-//         });
-//     }
-// };
+export const generateOtpSql = async (req, res) => {
+    const { email, role } = req.body;
+    const otp = generateOtp();
+    const expiry = new Date(Date.now() + 10 * 60 * 1000); // OTP is valid for 10 minutes
 
+    try {
+        await createOtp(email, otp, expiry);
+        await sendOtp(email, otp);
+
+        return res.status(200).json({
+            message: 'OTP sent to email',
+            success: true
+        });
+    } catch (error) {
+        console.error('Error generating OTP:', error.stack);
+        return res.status(500).json({
+            message: 'Internal server error',
+            success: false
+        });
+    }
+};
+
+export const verifyOtpSql = async (req, res) => {
+    const { email, otp } = req.body;
+
+    try {
+        const otpRecord = await getOtp(email, otp);
+        if (!otpRecord) {
+            return res.status(400).json({
+                message: 'Invalid or expired OTP',
+                success: false
+            });
+        }
+
+        const user = await getUserByEmail(email);
+        if (!user) {
+            return res.status(400).json({
+                message: "User not found.",
+                success: false
+            });
+        }
+
+        const tokenData = {
+            userId: user.id
+        };
+        const token = jwt.sign(tokenData, process.env.SECRET_KEY, { expiresIn: '1d' });
+
+        return res.status(200).cookie("token", token, { maxAge: 1 * 24 * 60 * 60 * 1000, httpOnly: true, sameSite: 'strict' }).json({
+            message: `Welcome back ${user.fullname}`,
+            user,
+            success: true
+        });
+    } catch (error) {
+        console.error('Error verifying OTP:', error.stack);
+        return res.status(500).json({
+            message: 'Internal server error',
+            success: false
+        });
+    }
+};
 export const loginUsersql = async (req, res) => {
     try {
         const { email, password, role } = req.body;

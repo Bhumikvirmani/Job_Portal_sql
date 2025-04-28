@@ -1,10 +1,10 @@
 // import { Application } from "../models/application.model.js";
 import {createApplication, applywithid, getApplicationsByJob, updateApplicationStatus, getApplicants, getAppliedJobs } from "../models/application_model_sql.js";
 import { Job } from "../models/job.model.js";
-
+import { getJobById } from "../models/job_model_sql.js";
 export const applyJobSql = async (req, res) => {
     try {
-        const userId = req.userId; // Assuming userId is set by authentication middleware
+        const userId = req.user.id; // Assuming userId is set by authentication middleware
         const jobId = req.params.id;
         if (!jobId) {
             return res.status(400).json({
@@ -32,15 +32,6 @@ export const applyJobSql = async (req, res) => {
                 success: false
             });
         }
-
-        // Create a new application
-        // const applicationData = {
-        //     job_id: jobId,
-        //     user_id: userId,
-        //     resume: "resume_url", // Placeholder, adapt as needed
-        //     status: "pending"
-        // };
-        // await createApplication(applicationData);
         const newApplication = await createApplication({
             job_id: jobId,
             user_id: userId,

@@ -1,7 +1,5 @@
-// import pool from "../config/database";
 import mysql from "mysql2/promise";
 import dotenv from "dotenv";
-// Create the users table if it doesn't exist
 dotenv.config();
 const pool = mysql.createPool({
     host: process.env.MYSQL_HOST,
@@ -12,6 +10,22 @@ const pool = mysql.createPool({
     connectionLimit: 10,
     queueLimit: 0
 });
+
+export const initializeOtpTable = async () => {
+    const sql = `
+        CREATE TABLE IF NOT EXISTS otps (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            email VARCHAR(255) NOT NULL,
+            otp VARCHAR(10) NOT NULL,
+            expiry TIMESTAMP NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    `;
+    const connection = await pool.getConnection();
+    await connection.query(sql);
+    connection.release();
+};
+
 export const initializeUserTable = async () => {
     const sql = `
         CREATE TABLE IF NOT EXISTS users (
@@ -83,6 +97,35 @@ export const createUser = async (user) => {
         connection.release();
     }
 };
+
+export const createOtp = async (email, otp, expiry) => {
+    const sql = "INSERT INTO otps (email, otp, expiry) VALUES (?, ?, ?)";
+    const values = [email, otp, expiry];
+    const connection = await pool.getConnection();
+    try {
+        await connection.execute(sql, values);
+    } catch (err) {
+        console.error('Error creating OTP:', err.stack);
+        throw err;
+    } finally {
+        connection.release();
+    }
+};
+
+export const getOtp = async (email, otp) => {
+    const sql = "SELECT * FROM otps WHERE email = ? AND otp = ? AND expiry > NOW()";
+    const connection = await pool.getConnection();
+    try {
+        const [rows] = await connection.execute(sql, [email, otp]);
+        return rows[0]; // Return the first OTP found
+    } catch (err) {
+        console.error('Error fetching OTP:', err.stack);
+        throw err;
+    } finally {
+        connection.release();
+    }
+};
+
 
 export const getUserByEmail = async (email) => {
     const sql = "SELECT * FROM users WHERE email = ?";
