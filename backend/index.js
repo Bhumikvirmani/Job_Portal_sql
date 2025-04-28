@@ -1,4 +1,5 @@
 import express from "express";
+import serverless from "serverless-http";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -20,10 +21,6 @@ app.use(express.json()); // Ensure JSON requests are parsed
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// const corsOptions = {
-//     origin: ['http://localhost:5173', 'https://job-portal-sql-dtf6.vercel.app/'], // Add your Vercel frontend URL
-//     credentials: true
-// };
 const corsOptions = {
     origin:  ['http://localhost:5173', 'https://job-portal-sql-iaoy.vercel.app'],
     credentials: true
@@ -58,3 +55,4 @@ initializeDatabaseTables();
 app.listen(PORT, () => {
     console.log(`Server running at port ${PORT}`);
 });
+export const handler = serverless(app);
