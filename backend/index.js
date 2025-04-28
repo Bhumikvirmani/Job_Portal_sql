@@ -20,10 +20,15 @@ app.use(express.json()); // Ensure JSON requests are parsed
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
+// const corsOptions = {
+//     origin: ['http://localhost:5173', 'https://job-portal-sql-dtf6.vercel.app/'], // Add your Vercel frontend URL
+//     credentials: true
+// };
 const corsOptions = {
-    origin: 'http://localhost:5173',
+    origin:  ['http://localhost:5173', '*'],
     credentials: true
 };
+
 
 app.use(cors(corsOptions));
 
