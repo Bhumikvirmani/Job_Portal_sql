@@ -3,7 +3,7 @@ import app, { initializeDatabaseTables } from "../index.js";
 
 let initialized = false;
 
-const handler = async (req, res) => {
+const handlerFunction = async (req, res) => {
     if (!initialized) {
         await initializeDatabaseTables();
         initialized = true;
@@ -11,4 +11,4 @@ const handler = async (req, res) => {
     return app(req, res);
 };
 
-export const serverlessHandler = serverless(handler);
+export const handler = serverless(handlerFunction);
