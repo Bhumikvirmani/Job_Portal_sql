@@ -30,6 +30,11 @@ app.use('/api/v1/application', applicationRoute);
 app.use('/api/v1/company', companyRoute);
 app.use('/api/v1/job', jobRouter);
 
+// Health check route for deployment verification
+app.get('/api/health', (req, res) => {
+    res.status(200).json({ status: 'ok', message: 'Backend is running' });
+});
+
 export const initializeDatabaseTables = async () => {
     try {
         await initializeUserTable();
