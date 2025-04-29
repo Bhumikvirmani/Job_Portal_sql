@@ -52,7 +52,7 @@ const initializeDatabaseTables = async () => {
 
 initializeDatabaseTables();
 
-app.listen(PORT, () => {
-    console.log(`Server running at port ${PORT}`);
-});
+// app.listen(PORT, () => {
+//     console.log(`Server running at port ${PORT}`);
+// });
 export const handler = serverless(app);
