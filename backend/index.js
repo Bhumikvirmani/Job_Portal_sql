@@ -1,5 +1,4 @@
 import express from "express";
-import serverless from "serverless-http";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -16,27 +15,22 @@ dotenv.config();
 
 const app = express();
 
-// Middleware
-app.use(express.json()); // Ensure JSON requests are parsed
+app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 const corsOptions = {
-    origin:  ['http://localhost:5173', 'https://job-portal-sql-iaoy.vercel.app'],
+    origin: ['http://localhost:5173', 'https://job-portal-sql-iaoy.vercel.app'],
     credentials: true
 };
 app.use(cors(corsOptions));
 
-const PORT = process.env.PORT || 3000;
-// app.use('/user',userRoute);
-// API routes
 app.use('/api/v1/user', userRoute);
 app.use('/api/v1/application', applicationRoute);
 app.use('/api/v1/company', companyRoute);
 app.use('/api/v1/job', jobRouter);
 
-// Initialize database tables
-const initializeDatabaseTables = async () => {
+export const initializeDatabaseTables = async () => {
     try {
         await initializeUserTable();
         await initializeProfileTable();
@@ -50,9 +44,4 @@ const initializeDatabaseTables = async () => {
     }
 };
 
-initializeDatabaseTables();
-
-// app.listen(PORT, () => {
-//     console.log(`Server running at port ${PORT}`);
-// });
-export const handler = serverless(app);
+export default app;
