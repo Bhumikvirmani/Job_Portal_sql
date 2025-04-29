@@ -1,8 +1,14 @@
 import serverless from "serverless-http";
-import app from "../index.js";
+import app, { initializeDatabaseTables } from "../index.js";
 
-const handlerfunction = (req, res) => {
+let initialized = false;
+
+const handlerFunction = async (req, res) => {
+    if (!initialized) {
+        await initializeDatabaseTables();
+        initialized = true;
+    }
     return app(req, res);
 };
 
-export const handler = serverless(handlerfunction);
+export const handler = serverless(handlerFunction);
